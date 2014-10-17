@@ -487,8 +487,3 @@ http://forums.guru3d.com/showthread.php?t=381912
 
 Submit your presets to the SweetFX Settings Database at:
 http://sfx.thelazy.net/games/
-
-Or email your comments and thoughts (but please no support questions - keep those to the Guru3D thread) to :
-      CeeJay.dk  (at)  gmail.com 
-
-You can also find me on reddit - my username there is CeeJayDK
