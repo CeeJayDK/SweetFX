@@ -19,7 +19,7 @@ It's goal is provide similar tools to games in realtime, as video processing sof
 It runs on all Windows versions from Windows 2000 and up. Both 32bit and 64bit.
 It works perfectly with all cards that can run DirectX9 games and support shader model 3. (that's all cards since the Ati Radeon X1xxx and Nvidia Geforce 6xxx series)
 Some of the effects will even work on cards so old that they can only run shader model 2. (Ati Radeon 9xxx to X8xx series and the GeForce FX 5xxx series)
-- there is a compability setting that enables support for these really old cards in /SweetFX/SweetFX_compatibility_settings.txt
+- there is a compatibility setting that enables support for these really old cards in /SweetFX/SweetFX_compatibility_settings.txt
 
 Effects included:
 
@@ -75,7 +75,7 @@ The installed files are:
    |- /dlls/                - Alternative DirectX proxy dlls are stored here.
    |   |- /FXAA DX9 dll/    - You will need to use the FXAA DX9 dll to use FXAA. Copy it over the one in the main folder.
    |   '- /SMAA/            - The SMAA dlls if you need to return to them. These are the same as the ones in the main folder.                
-   |- /Game_Compability.txt - Can't make SweetFX work with a game? - You can find help here.
+   |- /Game_Compatibility.txt - Can't make SweetFX work with a game? - You can find help here.
    |- /Making shaders.txt   - A few hints on making custom shaders for SweetFX.
    '- /SweetFX_compatibility_settings.txt - If your card can't run Shader Model 3, then you can force SweetFX to use shader model 2 here.
 
@@ -83,7 +83,7 @@ The installed files are:
                               If something goes wrong, this file will usually tell you why.
 
 Some games require special attention - You can find a list of those and instructions on how to get them working with SweetFX 
-in SweetFX/Game_Compability.txt
+in SweetFX/Game_Compatibility.txt
 If you encounter a game not in the list that requires more effort to work with SweetFX, post about it in the official thread
 on Guru3d : http://forums.guru3d.com/showthread.php?t=381912
                             
@@ -274,7 +274,7 @@ Some steps to resolve this:
 Q: I don't see any change in the image
 A: Try turning off anti-aliasing in the game (not in the mod)
    The mod is not compatible with some antialias implementations.
-   It might be made compatible by setting compability flags.
+   It might be made compatible by setting compatibility flags.
    
    If not then you can always use the included SMAA anti-aliasing.
 
