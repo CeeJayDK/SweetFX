@@ -47,9 +47,9 @@ The following two effects are also created by me, but are found in the Reshade-s
 * Splitscreen : Enables an before-and-after splitscreen comparison mode.
 
 
-     /------------------------------------------------------------.   
-    /                      Installation                           /
-    '------------------------------------------------------------/
+     /------------------------------------------------------------.  
+    /                      Installation                           /  
+    '------------------------------------------------------------/  
 
 
 Either :
