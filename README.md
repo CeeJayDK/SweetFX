@@ -46,25 +46,25 @@ The following two effects are also created by me, but are found in the Reshade-s
 * DisplayDepth : A utility shader created to help you set up the depth buffer correctly in Reshade.
 * Splitscreen : Enables an before-and-after splitscreen comparison mode.
 
-   /*-----------------------------------------------------------.   
-  /                      Installation                           /
-  '-----------------------------------------------------------*/
+     /*-----------------------------------------------------------.   
+    /                      Installation                           /
+    '-----------------------------------------------------------*/
 
 Either :
 A) Allow the Reshade installer to download SweetFX and install it for you.
 or
 B) Download SweetFX manually from https://github.com/CeeJayDK/SweetFX/archive/master.zip and extract it to the reshade-shaders folder that Reshade creates when you install it to a game directory.
 
-   /*-----------------------------------------------------------.   
-  /                          Usage                              /
-  '-----------------------------------------------------------*/
+     /*-----------------------------------------------------------.   
+    /                          Usage                              /
+    '-----------------------------------------------------------*/
   
 Enable the SweetFX effects you want to use on the Home tab of Reshade.
 Then adjust the settings in the settings dialog that appears at the bottom of the Home tab.
 
-   /*-----------------------------------------------------------.   
-  /                          Presets                            /
-  '-----------------------------------------------------------*/
+     /*-----------------------------------------------------------.   
+    /                          Presets                            /
+    '-----------------------------------------------------------*/
 
 Presets are files contain settings for the effects.
 People create their favorite looks for a particular game and then share these with others.
@@ -85,9 +85,9 @@ To do this:
 
 Most settings still have the same name because I try not to modify the settings if I can avoid it - so they stay more compatible with older presets.
 
-   /*-----------------------------------------------------------.   
-  /                         Problems?                           /
-  '-----------------------------------------------------------*/
+     /*-----------------------------------------------------------.   
+    /                         Problems?                           /
+    '-----------------------------------------------------------*/
 Post issues with Reshade on the Reshade forum :
 https://reshade.me/forum
 
@@ -98,15 +98,15 @@ If I'm not there you can try the subreddit at :
 https://www.reddit.com/r/ReShade
 
 
-   /*-----------------------------------------------------------.   
-  /                     Uninstallation                          /
-  '-----------------------------------------------------------*/
+     /*-----------------------------------------------------------.   
+    /                     Uninstallation                          /
+    '-----------------------------------------------------------*/
 
 1) Delete all the files you copied during the installation.
 
-   /*-----------------------------------------------------------.   
-  /                          Credits                            /
-  '-----------------------------------------------------------*/
+     /*-----------------------------------------------------------.   
+    /                          Credits                            /
+    '-----------------------------------------------------------*/
 
  Uses SMAA. Copyright (C) 2011 by Jorge Jimenez, Jose I. Echevarria,
  Belen Masia, Fernando Navarro and Diego Gutierrez.
@@ -132,9 +132,9 @@ https://www.reddit.com/r/ReShade
   
  SweetFX, LumaSharpen, Dither, Curves, Vibrance, Monochrome, Splitscreen, Explosion, Border, and Levels by Christian Cann Schuldt Jensen ( CeeJay.dk )
  
-   /*-----------------------------------------------------------.   
-  /                          Contact                            /
-  '-----------------------------------------------------------*/
+     /*-----------------------------------------------------------.   
+    /                          Contact                            /
+    '-----------------------------------------------------------*/
 Post comments, suggestions, support questions, screenshots, videos and presets on the Reshade forum at 
 https://reshade.me/forum
 
