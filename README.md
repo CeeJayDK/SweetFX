@@ -46,9 +46,11 @@ The following two effects are also created by me, but are found in the Reshade-s
 * DisplayDepth : A utility shader created to help you set up the depth buffer correctly in Reshade.
 * Splitscreen : Enables an before-and-after splitscreen comparison mode.
 
-      /------------------------------------------------------------.   
-     /                      Installation                           /
-     '------------------------------------------------------------/
+
+     /------------------------------------------------------------.   
+    /                      Installation                           /
+    '------------------------------------------------------------/
+
 
 Either :
 A) Allow the Reshade installer to download SweetFX and install it for you.
