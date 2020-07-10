@@ -48,16 +48,23 @@ uniform float3 border_color <
 float3 BorderPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
 	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float2 border = BUFFER_PIXEL_SIZE;  // Translate integer pixel width to floating point
 
 	// -- calculate the right border_width for a given border_ratio --
-	float2 border_width_variable = border_width;
+//	float2 border_width_variable = border_width;
 	if (border_width.x == -border_width.y) // If width is not used
 		if (BUFFER_ASPECT_RATIO < border_ratio)
-			border_width_variable = float2(0.0, (BUFFER_HEIGHT - (BUFFER_WIDTH / border_ratio)) * 0.5);
+//			border_width_variable = float2(0.0, (BUFFER_HEIGHT - (BUFFER_WIDTH / border_ratio)) * 0.5);
+			border.x = 0;
+			border.y *= (BUFFER_HEIGHT - (BUFFER_WIDTH / border_ratio)) * 0.5);
 		else
-			border_width_variable = float2((BUFFER_WIDTH - (BUFFER_HEIGHT * border_ratio)) * 0.5, 0.0);
+//			border_width_variable = float2((BUFFER_WIDTH - (BUFFER_HEIGHT * border_ratio)) * 0.5, 0.0);
+			border.x *= (BUFFER_WIDTH - (BUFFER_HEIGHT * border_ratio)) * 0.5);
+			border.y = 0;
+	else
+		border *= border_width;
 
-	float2 border = (BUFFER_PIXEL_SIZE * border_width_variable); // Translate integer pixel width to floating point
+//	float2 border = (BUFFER_PIXEL_SIZE * border_width_variable); // Translate integer pixel width to floating point
 	float2 within_border = saturate((-texcoord * texcoord + texcoord) - (-border * border + border)); // Becomes positive when inside the border and zero when outside
 
 	return all(within_border) ? color : border_color;
