@@ -43,6 +43,7 @@ Effects included:
 * Border : Makes the screenedge black as a workaround for the bright edge that forcing some AA modes sometimes causes or use it to create your own letterbox.
 * Layer : Allows you to overlay an image onto the game.
 * Nostalgia : Tries to mimic the look of very old computers or console systems.
+* AMD FidelityFX Contrast Adaptive Sharpening : Sharpens the image, making details easier to see. I've taken over the job of maintaining this Reshade port of AMDs sharpening effect, as it's popular with users and it's therefore best included in one of the popular shader suites.
 
 The following two effects are also created by me, but are found in the Reshade-shaders package as they are too crucial to Reshade not to include there.
 * DisplayDepth : A utility shader created to help you set up the depth buffer correctly in Reshade.
@@ -110,6 +111,9 @@ Runs on Reshade by Crosire
  Uses the HDR, Tonemap, Technicolor, Sepia and Vignette shaders from FXAATool by Violator, [some dude], fpedace, BeetleatWar1977 and [DKT70]
   - https://www.assembla.com/wiki/show/fxaa-pp-inject/
   - All of these shaders have been modified by me (CeeJay.dk) .. some of them extensively.
+  
+ AMD FidelityFX Contrast Adaptive Sharpening by AMD
+  - https://gpuopen.com/fidelityfx-cas/ 
   
  DPX shader by Loadus
  
