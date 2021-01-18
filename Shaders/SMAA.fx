@@ -141,13 +141,13 @@ texture blendTex < pooled = true; >
 	Format = RGBA8;
 };
 
-texture areaTex < source = "AreaTex.dds"; >
+texture areaTex < source = "AreaTex.png"; >
 {
 	Width = 160;
 	Height = 560;
 	Format = RG8;
 };
-texture searchTex < source = "SearchTex.dds"; >
+texture searchTex < source = "SearchTex.png"; >
 {
 	Width = 64;
 	Height = 16;
