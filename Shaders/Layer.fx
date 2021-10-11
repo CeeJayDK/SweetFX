@@ -2,7 +2,7 @@
 | :: Description :: |
 '-------------------/
 
-    Layer (version 0.2)
+    Layer (version 0.3)
 
     Author: CeeJay.dk
     License: MIT
@@ -20,6 +20,9 @@
     History:
     (*) Feature (+) Improvement (x) Bugfix (-) Information (!) Compatibility
 
+	Version 0.3 by Robert Jessop 
+	+ Added MIP map so image scales down nicer.
+	
     Version 0.2 by seri14 & Marot Satil
     * Added the ability to scale and move the layer around on XY axis
 */
@@ -69,6 +72,7 @@ texture Layer_Tex <
     Format = TEXFORMAT;
     Width  = LAYER_SIZE_X;
     Height = LAYER_SIZE_Y;
+	MipLevels=8;
 };
 
 sampler Layer_Sampler
@@ -82,7 +86,9 @@ void PS_Layer(float4 pos : SV_Position, float2 texCoord : TEXCOORD, out float4 p
 {
     const float4 backColor = tex2D(ReShade::BackBuffer, texCoord);
     const float2 pixelSize = 1.0 / (float2(LAYER_SIZE_X, LAYER_SIZE_Y) * Layer_Scale / BUFFER_SCREEN_SIZE);
-    const float4 layer     = tex2D(Layer_Sampler, texCoord * pixelSize + Layer_Pos * (1.0 - pixelSize));
+	const float2 layercoord = texCoord * pixelSize + Layer_Pos * (1.0 - pixelSize);
+	const float lod = clamp(log2(1.0/Layer_Scale), 0,7);
+    const float4 layer     = tex2Dlod(Layer_Sampler, float4(layercoord.x, layercoord.y,0, lod ) );
 
     passColor   = lerp(backColor, layer, layer.a * Layer_Blend);
     passColor.a = backColor.a;
