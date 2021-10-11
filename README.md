@@ -39,7 +39,6 @@ Effects included:
 * Curves : Contrast adjustments using S-curves - without causing clipping.
 * Sepia : Sepia tones the image - see http://en.wikipedia.org/wiki/Sepia_tone#Sepia_toning
 * Vignette : Darkens the edges of the image to make it look more like it was shot with a camera lens. - see http://en.wikipedia.org/wiki/Vignetting )
-* Dither : Applies dithering to simulate more colors than your monitor can display. This lessens banding artifacts - see http://en.wikipedia.org/wiki/Dithering#Digital_photography_and_image_processing )
 * Border : Makes the screenedge black as a workaround for the bright edge that forcing some AA modes sometimes causes or use it to create your own letterbox.
 * Layer : Allows you to overlay an image onto the game.
 * Nostalgia : Tries to mimic the look of very old computers or console systems.
