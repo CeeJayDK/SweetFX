@@ -22,8 +22,8 @@
 //	out the same, order of operations has not changed
 //	For some reason, it went from 64 to 48 instructions, a lot of MOV gone
 //	Also modified the way the final window is calculated
-//	  
-//	reordered min() and max() operations, from 11 down to 9 registers	
+//
+//	reordered min() and max() operations, from 11 down to 9 registers
 //
 //	restructured final weighting, 49 -> 48 instructions
 //
@@ -71,37 +71,43 @@ uniform float Sharpening <
 #define pixel float2(BUFFER_RCP_WIDTH, BUFFER_RCP_HEIGHT)
 
 texture TexColor : COLOR;
-sampler sTexColor {Texture = TexColor; SRGBTexture = true;};
+sampler sTexColor
+{
+	Texture = TexColor;
+	#if BUFFER_COLOR_BIT_DEPTH == 8
+		SRGBTexture = TRUE;
+	#endif
+};
 
 float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
-{	
+{
 	// fetch a 3x3 neighborhood around the pixel 'e',
 	//  a b c
 	//  d(e)f
 	//  g h i
-	
+
 
 	float3 b = tex2Doffset(sTexColor, texcoord, int2(0, -1)).rgb;
 	float3 d = tex2Doffset(sTexColor, texcoord, int2(-1, 0)).rgb;
-	
- 
+
+
 #if __RENDERER__ >= 0xa000 // If DX10 or higher
 	float4 red_efhi = tex2DgatherR(sTexColor, texcoord + 0.5 * pixel);
-	
+
 	float3 e = float3( red_efhi.w, red_efhi.w, red_efhi.w);
 	float3 f = float3( red_efhi.z, red_efhi.z, red_efhi.z);
 	float3 h = float3( red_efhi.x, red_efhi.x, red_efhi.x);
 	float3 i = float3( red_efhi.y, red_efhi.y, red_efhi.y);
-	
+
 	float4 green_efhi = tex2DgatherG(sTexColor, texcoord + 0.5 * pixel);
-	
+
 	e.g = green_efhi.w;
 	f.g = green_efhi.z;
 	h.g = green_efhi.x;
 	i.g = green_efhi.y;
-	
+
 	float4 blue_efhi = tex2DgatherB(sTexColor, texcoord + 0.5 * pixel);
-	
+
 	e.b = blue_efhi.w;
 	f.b = blue_efhi.z;
 	h.b = blue_efhi.x;
@@ -117,10 +123,10 @@ float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Targe
 
 #endif
 
-	float3 g = tex2Doffset(sTexColor, texcoord, int2(-1, 1)).rgb; 
+	float3 g = tex2Doffset(sTexColor, texcoord, int2(-1, 1)).rgb;
 	float3 a = tex2Doffset(sTexColor, texcoord, int2(-1, -1)).rgb;
 	float3 c = tex2Doffset(sTexColor, texcoord, int2(1, -1)).rgb;
-   
+
 
 	// Soft min and max.
 	//  a b c			 b
@@ -137,29 +143,29 @@ float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Targe
 
 	// Smooth minimum distance to signal limit divided by smooth max.
 	float3 rcpMRGB = rcp(mxRGB);
-	float3 ampRGB = saturate(min(mnRGB, 2.0 - mxRGB) * rcpMRGB);	
-	
+	float3 ampRGB = saturate(min(mnRGB, 2.0 - mxRGB) * rcpMRGB);
+
 	// Shaping amount of sharpening.
 	ampRGB = rsqrt(ampRGB);
-	
+
 	float peak = -3.0 * Contrast + 8.0;
 	float3 wRGB = -rcp(ampRGB * peak);
 
 	float3 rcpWeightRGB = rcp(4.0 * wRGB + 1.0);
 
 	//						  0 w 0
-	//  Filter shape:		   w 1 w
-	//						  0 w 0  
+	//  Filter shape:		  w 1 w
+	//						  0 w 0
 	float3 window = (b + d) + (f + h);
 	float3 outColor = saturate((window * wRGB + e) * rcpWeightRGB);
-	
+
 	return lerp(e, outColor, Sharpening);
 }
 
 technique ContrastAdaptiveSharpen
 	<
 	ui_label = "AMD FidelityFX Contrast Adaptive Sharpening";
-	ui_tooltip = 
+	ui_tooltip =
 	"CAS is a low overhead adaptive sharpening algorithm that AMD includes with their drivers.\n"
 	"This port to Reshade works with all cards from all vendors,\n"
 	"but cannot do the optional scaling that CAS is normally also capable of when activated in the AMD drivers.\n"
@@ -173,6 +179,8 @@ technique ContrastAdaptiveSharpen
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = CASPass;
-		SRGBWriteEnable = true;
+		#if BUFFER_COLOR_BIT_DEPTH == 8
+			SRGBWriteEnable = TRUE;
+		#endif
 	}
 }
