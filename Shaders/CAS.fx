@@ -154,7 +154,7 @@ float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Targe
 	float3 rcpWeightRGB = rcp(4.0 * wRGB + 1.0);
 
 	//						  0 w 0
-	//  Filter shape:		   w 1 w
+	//  Filter shape:		  w 1 w
 	//						  0 w 0
 	float3 window = (b + d) + (f + h);
 	float3 outColor = saturate((window * wRGB + e) * rcpWeightRGB);
