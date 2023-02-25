@@ -25,9 +25,19 @@ uniform float Contrast < __UNIFORM_SLIDER_FLOAT1
 
 #include "ReShade.fxh"
 
+#ifndef SWEETFX_CURVES_SRGB
+#define SWEETFX_CURVES_SRGB 1
+#endif
+
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = SWEETFX_CURVES_SRGB && (BUFFER_COLOR_SPACE==1);
+};
+
 float4 CurvesPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
-	float4 colorInput = tex2D(ReShade::BackBuffer, texcoord);
+	float4 colorInput = tex2D(BackBuffer, texcoord);
 	float3 lumCoeff = float3(0.2126, 0.7152, 0.0722);  //Values to calculate luma with
 	float Contrast_blend = Contrast; 
 	const float PI = 3.1415927;
@@ -195,5 +205,6 @@ technique Curves
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = CurvesPass;
+		SRGBWriteEnable = SWEETFX_CURVES_SRGB && (BUFFER_COLOR_SPACE==1);
 	}
 }
