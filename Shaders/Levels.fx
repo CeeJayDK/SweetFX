@@ -44,6 +44,16 @@ uniform bool HighlightClipping <
 
 #include "ReShade.fxh"
 
+#ifndef SWEETFX_LEVELS_SRGB
+#define SWEETFX_LEVELS_SRGB 1
+#endif
+
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = SWEETFX_LEVELS_SRGB && (BUFFER_COLOR_SPACE==1);
+};
+
 float3 LevelsPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
 	float black_point_float = BlackPoint / 255.0;
@@ -81,5 +91,6 @@ technique Levels
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = LevelsPass;
+		SRGBWriteEnable = SWEETFX_LEVELS_SRGB && (BUFFER_COLOR_SPACE==1);
 	}
 }
