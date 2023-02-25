@@ -30,9 +30,19 @@ uniform float Strength < __UNIFORM_SLIDER_FLOAT1
 
 #include "ReShade.fxh"
 
+#ifndef SWEETFX_MATRIX_SRGB
+#define SWEETFX_MATRIX_SRGB 1
+#endif
+
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = SWEETFX_MATRIX_SRGB && (BUFFER_COLOR_SPACE==1);
+};
+
 float3 ColorMatrixPass(float4 position : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
-	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 color = tex2D(BackBuffer, texcoord).rgb;
 
 	const float3x3 ColorMatrix = float3x3(ColorMatrix_Red, ColorMatrix_Green, ColorMatrix_Blue);
 	color = lerp(color, mul(ColorMatrix, color), Strength);
@@ -46,5 +56,6 @@ technique ColorMatrix
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = ColorMatrixPass;
+		SRGBWriteEnable = SWEETFX_MATRIX_SRGB && (BUFFER_COLOR_SPACE==1);
 	}
 }
