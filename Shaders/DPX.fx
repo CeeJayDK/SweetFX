@@ -30,6 +30,16 @@ uniform float Strength < __UNIFORM_SLIDER_FLOAT1
 
 #include "ReShade.fxh"
 
+#ifndef SWEETFX_DPX_SRGB
+#define SWEETFX_DPX_SRGB 1
+#endif
+
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = SWEETFX_DPX_SRGB && (BUFFER_COLOR_SPACE==1);
+};
+
 static const float3x3 RGB = float3x3(
 	 2.6714711726599600, -1.2672360578624100, -0.4109956021722270,
 	-1.0251070293466400,  1.9840911624108900,  0.0439502493584124,
@@ -43,7 +53,7 @@ static const float3x3 XYZ = float3x3(
 
 float3 DPXPass(float4 vois : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
-	float3 input = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 input = tex2D(BackBuffer, texcoord).rgb;
 
 	float3 B = input;
 	B = B * (1.0 - Contrast) + (0.5 * Contrast);
@@ -69,5 +79,6 @@ technique DPX
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = DPXPass;
+		SRGBWriteEnable = SWEETFX_DPX_SRGB && (BUFFER_COLOR_SPACE==1);
 	}
 }
