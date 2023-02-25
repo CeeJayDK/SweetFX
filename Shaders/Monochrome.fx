@@ -81,9 +81,19 @@ uniform float Monochrome_color_saturation < __UNIFORM_SLIDER_FLOAT1
 	ui_min = 0.0; ui_max = 1.0;
 > = 0.0;
 
+#ifndef SWEETFX_MONOCHROME_SRGB
+#define SWEETFX_MONOCHROME_SRGB 1
+#endif
+
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = SWEETFX_MONOCHROME_SRGB && (BUFFER_COLOR_SPACE==1);
+};
+
 float3 MonochromePass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
-	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 color = tex2D(BackBuffer, texcoord).rgb;
 
 	float3 Coefficients = float3(0.21, 0.72, 0.07);
 
@@ -127,5 +137,6 @@ technique Monochrome
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = MonochromePass;
+		SRGBWriteEnable = SWEETFX_MONOCHROME_SRGB && (BUFFER_COLOR_SPACE==1);
 	}
 }

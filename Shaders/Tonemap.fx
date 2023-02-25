@@ -35,9 +35,19 @@ uniform float3 FogColor < __UNIFORM_COLOR_FLOAT3
 
 #include "ReShade.fxh"
 
+#ifndef SWEETFX_TMO_SRGB
+#define SWEETFX_TMO_SRGB 1
+#endif
+
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = SWEETFX_TMO_SRGB && (BUFFER_COLOR_SPACE==1);
+};
+
 float3 TonemapPass(float4 position : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
-	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 color = tex2D(BackBuffer, texcoord).rgb;
 	color = saturate(color - Defog * FogColor * 2.55); // Defog
 	color *= pow(2.0f, Exposure); // Exposure
 	color = pow(color, Gamma); // Gamma
@@ -68,5 +78,6 @@ technique Tonemap
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = TonemapPass;
+		SRGBWriteEnable = SWEETFX_TMO_SRGB && (BUFFER_COLOR_SPACE==1);
 	}
 }

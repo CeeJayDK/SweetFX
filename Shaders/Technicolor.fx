@@ -19,6 +19,16 @@ uniform float Strength < __UNIFORM_SLIDER_FLOAT1
 
 #include "ReShade.fxh"
 
+#ifndef SWEETFX_TC_SRGB
+#define SWEETFX_TC_SRGB 1
+#endif
+
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = SWEETFX_TC_SRGB && (BUFFER_COLOR_SPACE==1);
+};
+
 float3 TechnicolorPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
 	const float3 cyanfilter = float3(0.0, 1.30, 1.0);
@@ -28,7 +38,7 @@ float3 TechnicolorPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : 
 	const float2 greenfilter = float2(0.30, 1.0);       // RG_
 	const float2 magentafilter2 = magentafilter.rb;     // R_B
 
-	float3 tcol = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 tcol = tex2D(BackBuffer, texcoord).rgb;
 	
 	float2 negative_mul_r = tcol.rg * (1.0 / (RGBNegativeAmount.r * Power));
 	float2 negative_mul_g = tcol.rg * (1.0 / (RGBNegativeAmount.g * Power));
@@ -46,5 +56,6 @@ technique Technicolor
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = TechnicolorPass;
+		SRGBWriteEnable = SWEETFX_TC_SRGB && (BUFFER_COLOR_SPACE==1);
 	}
 }
