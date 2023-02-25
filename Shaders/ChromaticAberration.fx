@@ -17,13 +17,19 @@ uniform float Strength < __UNIFORM_SLIDER_FLOAT1
 
 #include "ReShade.fxh"
 
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = true;
+};
+
 float3 ChromaticAberrationPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
-	float3 color, colorInput = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 color, colorInput = tex2D(BackBuffer, texcoord).rgb;
 	// Sample the color components
-	color.r = tex2D(ReShade::BackBuffer, texcoord + (BUFFER_PIXEL_SIZE * Shift)).r;
+	color.r = tex2D(BackBuffer, texcoord + (BUFFER_PIXEL_SIZE * Shift)).r;
 	color.g = colorInput.g;
-	color.b = tex2D(ReShade::BackBuffer, texcoord - (BUFFER_PIXEL_SIZE * Shift)).b;
+	color.b = tex2D(BackBuffer, texcoord - (BUFFER_PIXEL_SIZE * Shift)).b;
 
 	// Adjust the strength of the effect
 	return lerp(colorInput, color, Strength);
@@ -35,5 +41,6 @@ technique CA
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = ChromaticAberrationPass;
+		SRGBWriteEnable = true;
 	}
 }
