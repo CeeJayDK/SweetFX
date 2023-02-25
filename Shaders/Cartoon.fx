@@ -17,15 +17,21 @@ uniform float EdgeSlope < __UNIFORM_SLIDER_FLOAT1
 
 #include "ReShade.fxh"
 
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = true;
+};
+
 float3 CartoonPass(float4 position : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
 {
-	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 color = tex2D(BackBuffer, texcoord).rgb;
 	const float3 coefLuma = float3(0.2126, 0.7152, 0.0722);
 
-	float diff1 = dot(coefLuma, tex2D(ReShade::BackBuffer, texcoord + BUFFER_PIXEL_SIZE).rgb);
-	diff1 = dot(float4(coefLuma, -1.0), float4(tex2D(ReShade::BackBuffer, texcoord - BUFFER_PIXEL_SIZE).rgb , diff1));
-	float diff2 = dot(coefLuma, tex2D(ReShade::BackBuffer, texcoord + BUFFER_PIXEL_SIZE * float2(1, -1)).rgb);
-	diff2 = dot(float4(coefLuma, -1.0), float4(tex2D(ReShade::BackBuffer, texcoord + BUFFER_PIXEL_SIZE * float2(-1, 1)).rgb , diff2));
+	float diff1 = dot(coefLuma, tex2D(BackBuffer, texcoord + BUFFER_PIXEL_SIZE).rgb);
+	diff1 = dot(float4(coefLuma, -1.0), float4(tex2D(BackBuffer, texcoord - BUFFER_PIXEL_SIZE).rgb , diff1));
+	float diff2 = dot(coefLuma, tex2D(BackBuffer, texcoord + BUFFER_PIXEL_SIZE * float2(1, -1)).rgb);
+	diff2 = dot(float4(coefLuma, -1.0), float4(tex2D(BackBuffer, texcoord + BUFFER_PIXEL_SIZE * float2(-1, 1)).rgb , diff2));
 
 	float edge = dot(float2(diff1, diff2), float2(diff1, diff2));
 
@@ -38,5 +44,6 @@ technique Cartoon
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = CartoonPass;
+		SRGBWriteEnable = true;
 	}
 }
