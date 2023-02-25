@@ -147,7 +147,12 @@ uniform bool Ascii_dithering_debug_gradient <
 | :: Sampler and timers :: |
 '-------------------------*/
 
-#define asciiSampler ReShade::BackBuffer
+//#define asciiSampler ReShade::BackBuffer
+sampler2D asciiSampler
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = true;
+};
 
 uniform float timer < source = "timer"; >;
 uniform float framecount < source = "framecount"; >;
@@ -442,6 +447,7 @@ technique ASCII
 	{
 		VertexShader=PostProcessVS;
 		PixelShader=PS_Ascii;
+		SRGBWriteEnable=true;
 	}
 }
 
