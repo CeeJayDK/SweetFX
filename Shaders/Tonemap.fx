@@ -42,7 +42,7 @@ uniform float3 FogColor < __UNIFORM_COLOR_FLOAT3
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_TMO_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_TMO_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float3 TonemapPass(float4 position : SV_Position, float2 texcoord : TexCoord) : SV_Target
@@ -78,6 +78,6 @@ technique Tonemap
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = TonemapPass;
-		SRGBWriteEnable = SWEETFX_TMO_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_TMO_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

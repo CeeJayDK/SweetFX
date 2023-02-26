@@ -24,7 +24,7 @@ uniform float EdgeSlope < __UNIFORM_SLIDER_FLOAT1
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_CARTOON_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_CARTOON_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float3 CartoonPass(float4 position : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
@@ -48,6 +48,6 @@ technique Cartoon
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = CartoonPass;
-		SRGBWriteEnable = SWEETFX_CARTOON_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_CARTOON_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

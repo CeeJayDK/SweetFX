@@ -37,7 +37,7 @@ uniform float Strength < __UNIFORM_SLIDER_FLOAT1
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_MATRIX_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_MATRIX_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float3 ColorMatrixPass(float4 position : SV_Position, float2 texcoord : TexCoord) : SV_Target
@@ -56,6 +56,6 @@ technique ColorMatrix
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = ColorMatrixPass;
-		SRGBWriteEnable = SWEETFX_MATRIX_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_MATRIX_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

@@ -42,7 +42,7 @@ uniform float2 Center < __UNIFORM_SLIDER_FLOAT2
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_VIGNETTE_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_VIGNETTE_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float4 VignettePass(float4 vpos : SV_Position, float2 tex : TexCoord) : SV_Target
@@ -121,6 +121,6 @@ technique Vignette
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = VignettePass;
-		SRGBWriteEnable = SWEETFX_VIGNETTE_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_VIGNETTE_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

@@ -46,7 +46,7 @@ uniform int Vibrance_Luma <
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_VIBRANCE_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_VIBRANCE_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float3 VibrancePass(float4 position : SV_Position, float2 texcoord : TexCoord) : SV_Target
@@ -81,6 +81,6 @@ technique Vibrance
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = VibrancePass;
-		SRGBWriteEnable = SWEETFX_VIBRANCE_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_VIBRANCE_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

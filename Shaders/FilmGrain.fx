@@ -37,7 +37,7 @@ uniform float Timer < source = "timer"; >;
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_GRAIN_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_GRAIN_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float3 FilmGrainPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
@@ -110,6 +110,6 @@ technique FilmGrain
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = FilmGrainPass;
-		SRGBWriteEnable = SWEETFX_GRAIN_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_GRAIN_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

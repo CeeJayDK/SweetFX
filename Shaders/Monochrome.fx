@@ -88,7 +88,7 @@ uniform float Monochrome_color_saturation < __UNIFORM_SLIDER_FLOAT1
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_MONOCHROME_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_MONOCHROME_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float3 MonochromePass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
@@ -137,6 +137,6 @@ technique Monochrome
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = MonochromePass;
-		SRGBWriteEnable = SWEETFX_MONOCHROME_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_MONOCHROME_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

@@ -33,7 +33,7 @@ uniform float Strength < __UNIFORM_SLIDER_FLOAT1
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_TC2_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_TC2_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float3 TechnicolorPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
@@ -68,6 +68,6 @@ technique Technicolor2
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = TechnicolorPass;
-		SRGBWriteEnable = SWEETFX_TC2_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_TC2_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

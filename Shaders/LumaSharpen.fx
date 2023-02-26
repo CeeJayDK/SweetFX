@@ -55,7 +55,7 @@ uniform bool show_sharpen <
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_SHARP_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_SHARP_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
    /*-----------------------------------------------------------.
@@ -206,6 +206,6 @@ technique LumaSharpen
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = LumaSharpenPass;
-		SRGBWriteEnable = SWEETFX_SHARP_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_SHARP_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

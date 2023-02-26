@@ -37,7 +37,7 @@ uniform float Strength < __UNIFORM_SLIDER_FLOAT1
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_DPX_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_DPX_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 static const float3x3 RGB = float3x3(
@@ -79,6 +79,6 @@ technique DPX
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = DPXPass;
-		SRGBWriteEnable = SWEETFX_DPX_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_DPX_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }

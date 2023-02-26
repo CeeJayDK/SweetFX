@@ -24,7 +24,7 @@ uniform float Strength < __UNIFORM_SLIDER_FLOAT1
 sampler2D BackBuffer
 {
 	Texture = ReShade::BackBufferTex;
-	SRGBTexture = SWEETFX_CA_SRGB && (BUFFER_COLOR_SPACE==1);
+	SRGBTexture = SWEETFX_CA_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 };
 
 float3 ChromaticAberrationPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
@@ -45,6 +45,6 @@ technique CA
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = ChromaticAberrationPass;
-		SRGBWriteEnable = SWEETFX_CA_SRGB && (BUFFER_COLOR_SPACE==1);
+		SRGBWriteEnable = SWEETFX_CA_SRGB && (BUFFER_COLOR_SPACE==1) && (BUFFER_COLOR_BIT_DEPTH==8);
 	}
 }
