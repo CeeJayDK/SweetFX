@@ -30,9 +30,19 @@ uniform float Timer < source = "timer"; >;
 
 #include "ReShade.fxh"
 
+#ifndef SWEETFX_GRAIN_SRGB
+#define SWEETFX_GRAIN_SRGB 1
+#endif
+
+sampler2D BackBuffer
+{
+	Texture = ReShade::BackBufferTex;
+	SRGBTexture = SWEETFX_GRAIN_SRGB && (BUFFER_COLOR_SPACE==1);
+};
+
 float3 FilmGrainPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
-	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+	float3 color = tex2D(BackBuffer, texcoord).rgb;
   
 	//float inv_luma = dot(color, float3(-0.2126, -0.7152, -0.0722)) + 1.0;
 	float inv_luma = dot(color, float3(-1.0/3.0, -1.0/3.0, -1.0/3.0)) + 1.0; //Calculate the inverted luma so it can be used later to control the variance of the grain
@@ -100,5 +110,6 @@ technique FilmGrain
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = FilmGrainPass;
+		SRGBWriteEnable = SWEETFX_GRAIN_SRGB && (BUFFER_COLOR_SPACE==1);
 	}
 }
