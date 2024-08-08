@@ -13,10 +13,11 @@
  * Added the border_ratio feature
  * -- Version 1.4.1 by CeeJay.dk --
  * Cleaned up setting for Reshade 3.x
- */
+ * -- Version 1.4.2 by Marot --
+ * Added opacity adjustment to existing color setting.
+*/
 
 #include "ReShade.fxh"
-#include "ReShadeUI.fxh"
 
 /*
 uniform float2 border_width <
@@ -40,10 +41,10 @@ uniform float border_ratio <
 	ui_tooltip = "Set the desired ratio for the visible area.";
 > = 2.35;
 
-uniform float3 border_color <
+uniform float4 border_color <
 	ui_type = "color";
 	ui_label = "Border Color";
-> = float3(0.0, 0.0, 0.0);
+> = float4(0.0, 0.0, 0.0, 1.0);
 
 float3 BorderPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
 {
@@ -60,7 +61,7 @@ float3 BorderPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Ta
 	float2 border = (BUFFER_PIXEL_SIZE * border_width_variable); // Translate integer pixel width to floating point
 	float2 within_border = saturate((-texcoord * texcoord + texcoord) - (-border * border + border)); // Becomes positive when inside the border and zero when outside
 
-	return all(within_border) ? color : border_color;
+	return all(within_border) ? color : lerp(color, border_color.rgb, border_color.a);
 }
 
 technique Border
