@@ -72,8 +72,8 @@ uniform float Sharpening <
 
 uniform float Offset <
 	ui_type = "drag";
-	ui_label = "Lod Deviation intensity";
-	ui_tooltip = "Adjusts the Lod";
+	ui_label = "Offset intensity";
+	ui_tooltip = "Adjusts the Offset";
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
