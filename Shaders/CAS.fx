@@ -89,22 +89,43 @@ float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Targe
 	
  
 #if __RENDERER__ >= 0xb000 // If DX11 or higher
-	float4 red_efhi = tex2DgatherR(sTexColor, texcoord + 0.5 * pixel);
+    	// Sample the red channel manually from 4 neighboring texels
+	float4 red_efhi = float4(
+		tex2D(sTexColor, texcoord + float2(-0.25, -0.25) * pixel).r,
+		tex2D(sTexColor, texcoord + float2( 0.25, -0.25) * pixel).r,
+		tex2D(sTexColor, texcoord + float2(-0.25,  0.25) * pixel).r,
+		tex2D(sTexColor, texcoord + float2( 0.25,  0.25) * pixel).r
+	);
 	
-	float3 e = float3( red_efhi.w, red_efhi.w, red_efhi.w);
-	float3 f = float3( red_efhi.z, red_efhi.z, red_efhi.z);
-	float3 h = float3( red_efhi.x, red_efhi.x, red_efhi.x);
-	float3 i = float3( red_efhi.y, red_efhi.y, red_efhi.y);
+	// Initialize e, f, h, i with the red channel values
+	float3 e = float3(red_efhi.w, red_efhi.w, red_efhi.w);
+	float3 f = float3(red_efhi.z, red_efhi.z, red_efhi.z);
+	float3 h = float3(red_efhi.x, red_efhi.x, red_efhi.x);
+	float3 i = float3(red_efhi.y, red_efhi.y, red_efhi.y);
 	
-	float4 green_efhi = tex2DgatherG(sTexColor, texcoord + 0.5 * pixel);
+	// Sample the green channel manually from 4 neighboring texels
+	float4 green_efhi = float4(
+		tex2D(sTexColor, texcoord + float2(-0.25, -0.25) * pixel).g,
+		tex2D(sTexColor, texcoord + float2( 0.25, -0.25) * pixel).g,
+		tex2D(sTexColor, texcoord + float2(-0.25,  0.25) * pixel).g,
+		tex2D(sTexColor, texcoord + float2( 0.25,  0.25) * pixel).g
+	);
 	
+	// Update e, f, h, i with the green channel values
 	e.g = green_efhi.w;
 	f.g = green_efhi.z;
 	h.g = green_efhi.x;
 	i.g = green_efhi.y;
 	
-	float4 blue_efhi = tex2DgatherB(sTexColor, texcoord + 0.5 * pixel);
+	// Sample the blue channel manually from 4 neighboring texels
+	float4 blue_efhi = float4(
+		tex2D(sTexColor, texcoord + float2(-0.25, -0.25) * pixel).b,
+		tex2D(sTexColor, texcoord + float2( 0.25, -0.25) * pixel).b,
+		tex2D(sTexColor, texcoord + float2(-0.25,  0.25) * pixel).b,
+		tex2D(sTexColor, texcoord + float2( 0.25,  0.25) * pixel).b
+	);
 	
+	// Update e, f, h, i with the blue channel values
 	e.b = blue_efhi.w;
 	f.b = blue_efhi.z;
 	h.b = blue_efhi.x;
