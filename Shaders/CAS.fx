@@ -70,13 +70,21 @@ uniform float Sharpening <
 	ui_min = 0.0; ui_max = 1.0;
 > = 1.0;
 
+uniform float Offset <
+	ui_type = "drag";
+	ui_label = "Lod Deviation intensity";
+	ui_tooltip = "Adjusts the Lod";
+	ui_min = 0.0; ui_max = 1.0;
+> = 1.0;
+
 #include "ReShade.fxh"
 #define pixel float2(BUFFER_RCP_WIDTH, BUFFER_RCP_HEIGHT)
 
 texture TexColor : COLOR;
 sampler sTexColor {Texture = TexColor; SRGBTexture = true;};
 
-float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Target
+
+float3 CASPass(float4 vpos : SV_Position, float2 texcoord : texcoord) : SV_Target
 {	
 	// fetch a 3x3 neighborhood around the pixel 'e',
 	//  a b c
@@ -89,42 +97,43 @@ float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Targe
 	
  
 #if __RENDERER__ >= 0xb000 // If DX11 or higher
-    	// Sample the red channel manually from 4 neighboring texels
+
+    // Sample the red channel manually from 4 neighboring texels
 	float4 red_efhi = float4(
-		tex2D(sTexColor, texcoord + float2(-0.25, -0.25) * pixel).r,
-		tex2D(sTexColor, texcoord + float2( 0.25, -0.25) * pixel).r,
-		tex2D(sTexColor, texcoord + float2(-0.25,  0.25) * pixel).r,
-		tex2D(sTexColor, texcoord + float2( 0.25,  0.25) * pixel).r
+		tex2D(sTexColor, texcoord + Offset * pixel).r,
+		tex2D(sTexColor, texcoord + Offset * pixel).r,
+		tex2D(sTexColor, texcoord + Offset * pixel).r,
+		tex2D(sTexColor, texcoord + Offset * pixel).r
 	);
-	
+
 	// Initialize e, f, h, i with the red channel values
 	float3 e = float3(red_efhi.w, red_efhi.w, red_efhi.w);
 	float3 f = float3(red_efhi.z, red_efhi.z, red_efhi.z);
 	float3 h = float3(red_efhi.x, red_efhi.x, red_efhi.x);
 	float3 i = float3(red_efhi.y, red_efhi.y, red_efhi.y);
-	
+
 	// Sample the green channel manually from 4 neighboring texels
 	float4 green_efhi = float4(
-		tex2D(sTexColor, texcoord + float2(-0.25, -0.25) * pixel).g,
-		tex2D(sTexColor, texcoord + float2( 0.25, -0.25) * pixel).g,
-		tex2D(sTexColor, texcoord + float2(-0.25,  0.25) * pixel).g,
-		tex2D(sTexColor, texcoord + float2( 0.25,  0.25) * pixel).g
+		tex2D(sTexColor, texcoord + Offset * pixel).g,
+		tex2D(sTexColor, texcoord + Offset * pixel).g,
+		tex2D(sTexColor, texcoord + Offset * pixel).g,
+		tex2D(sTexColor, texcoord + Offset * pixel).g
 	);
-	
+
 	// Update e, f, h, i with the green channel values
 	e.g = green_efhi.w;
 	f.g = green_efhi.z;
 	h.g = green_efhi.x;
 	i.g = green_efhi.y;
-	
+
 	// Sample the blue channel manually from 4 neighboring texels
 	float4 blue_efhi = float4(
-		tex2D(sTexColor, texcoord + float2(-0.25, -0.25) * pixel).b,
-		tex2D(sTexColor, texcoord + float2( 0.25, -0.25) * pixel).b,
-		tex2D(sTexColor, texcoord + float2(-0.25,  0.25) * pixel).b,
-		tex2D(sTexColor, texcoord + float2( 0.25,  0.25) * pixel).b
+		tex2D(sTexColor, texcoord + Offset * pixel).b,
+		tex2D(sTexColor, texcoord + Offset * pixel).b,
+		tex2D(sTexColor, texcoord + Offset * pixel).b,
+		tex2D(sTexColor, texcoord + Offset * pixel).b
 	);
-	
+
 	// Update e, f, h, i with the blue channel values
 	e.b = blue_efhi.w;
 	f.b = blue_efhi.z;
