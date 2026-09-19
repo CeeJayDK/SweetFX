@@ -111,7 +111,7 @@ float3 CASPass(float4 vpos : SV_Position, float2 texcoord : TexCoord) : SV_Targe
 	i.b = blue_efhi.y;
 
 
-#else // If DX9
+#else // If lower than DX11 (DX9 or DX10)
 	float3 e = tex2D(sTexColor, texcoord).rgb;
 	float3 f = tex2Doffset(sTexColor, texcoord, int2(1, 0)).rgb;
 

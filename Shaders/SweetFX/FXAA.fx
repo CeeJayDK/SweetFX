@@ -42,7 +42,7 @@ uniform float EdgeThresholdMin < __UNIFORM_SLIDER_FLOAT1
 
 //-------------------------------------------------------------------------------------------------
 
-#if (__RENDERER__ == 0xb000 || __RENDERER__ == 0xb100)
+#if (__RENDERER__ >= 0xb000) //If DX11 or greater, then use Gather
 	#define FXAA_GATHER4_ALPHA 1
 	#define FxaaTexAlpha4(t, p) tex2Dgather(t, p, 3)
 	#define FxaaTexOffAlpha4(t, p, o) tex2Dgatheroffset(t, p, o, 3)
