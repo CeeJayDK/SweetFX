@@ -104,15 +104,15 @@ sampler EffectASampler { Texture = EffectABuffer; };
 '-------------*/
 
 // Capture: Store the original unprocessed buffer
-float3 PS_Capture(float4 pos : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
+float4 PS_Capture(float4 pos : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
 {
-	return tex2D(ReShade::BackBuffer, texcoord).rgb;
+	return tex2D(ReShade::BackBuffer, texcoord);
 }
 
 // Restore: Display original image
-float3 PS_Restore(float4 pos : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
+float4 PS_Restore(float4 pos : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
 {
-	return tex2D(OriginalSampler, texcoord).rgb;
+	return tex2D(OriginalSampler, texcoord);
 }
 
 // Compare: Compare the original and two effects
