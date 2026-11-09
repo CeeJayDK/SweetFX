@@ -2,7 +2,7 @@
 | :: Description :: |
 '-------------------/
 
-	Nostalgia (version 1.3)
+	Nostalgia (version 1.4)
 
 	Author: CeeJay.dk
 	License: MIT
@@ -14,10 +14,9 @@
 	Ideas for future improvement:
 	* Try HSL / HCY / Lab or other colorspaces. I'm not sure RGB is the best choice for color matching.
 	* Pixelation
-	* Scanlines
 	* CRT patterns
 	* Curvature
-	* More Dithering (both good and the bad dithering used back then)
+	* More Dithering (Bayer matrix etc.)
 	* Levels (might be needed because older system were often displayed on televisions and older monitors - not modern monitors)
 
 	History:
@@ -41,6 +40,17 @@
 	+ Made Nostalgia do color matching in linear space which improves color matching
 	* Added checker board dithering
 	* Added scanlines
+
+	Version 1.4 (optimized)
+	* Dither now works independently of color reduction, and has a strength slider
+	* Added "Quantize" color reduction (levels per channel)
+	* Added "Color reduction strength" slider
+	* Scanlines reworked: 6 distinct types + size and strength sliders
+	+ Palette list trimmed to accurate ones (Custom, C64, EGA, CGA, ZX Spectrum, Game Boy)
+	x Palettes are now converted to linear space when Nostalgia_linear = 1,
+	  so the displayed colors match the palette values (before they came out too bright)
+	x ZX Spectrum no longer has a duplicate black
+	+ Game Boy palette is matched by brightness instead of RGB distance
 */
 
 
@@ -55,6 +65,8 @@
 | :: Defines :: |
 '--------------*/
 
+// Linear color space. Can be changed in ReShade's "Preprocessor definitions"
+// (1 = work in linear space, 0 = work directly on the gamma-encoded image).
 #ifndef Nostalgia_linear
 	#define Nostalgia_linear 1
 #endif
@@ -67,53 +79,83 @@ uniform int Nostalgia_scanlines
 <
 	ui_type = "combo";
 	ui_label = "Scanlines";
+	ui_tooltip = "Size is ignored by the Aperture grille type. With Size = 2 the 'Thin lines' and 'Hard bands' types look the same; increase Size to see the difference.";
 	ui_items = 
 	"None\0"
-	"Type 1\0"
-	"Type 2\0";
-	//ui_category = "";
-> = 1;
+	"Soft (sine wave)\0"
+	"CRT (bright areas bleed over lines)\0"
+	"Thin lines (1 px)\0"
+	"Hard bands (50% dark)\0"
+	"Aperture grille (vertical RGB stripes)\0"
+	"Shadow mask (RGB dots)\0";
+> = 2;
+
+uniform int Nostalgia_scanline_size
+<
+	ui_type = "slider";
+	ui_label = "Scanline size";
+	ui_tooltip = "Distance between lines in pixels.";
+	ui_min = 2; ui_max = 8; ui_step = 1;
+> = 2;
+
+uniform float Nostalgia_scanline_strength
+<
+	ui_type = "slider";
+	ui_label = "Scanline strength";
+	ui_min = 0.0; ui_max = 1.0; ui_step = 0.01;
+> = 0.5;
 
 uniform int Nostalgia_color_reduction
 <
 	ui_type = "combo";
 	ui_label = "Color reduction type";
-	//ui_tooltip = "Choose a color reduction type";
-	//ui_category = "";
 	ui_items = 
 	"None\0"
 	"Palette\0"
-	//"Quantize\0"
-	;
-> = 1;
-
-uniform bool Nostalgia_dither 
-<
-	ui_label = "Dither";
+	"Quantize (levels per channel)\0";
 > = 0;
+
+uniform float Nostalgia_reduction_strength
+<
+	ui_type = "slider";
+	ui_label = "Color reduction strength";
+	ui_tooltip = "0.0 = original image, 1.0 = fully reduced colors. Lower values give a softer, less distorted look.";
+	ui_min = 0.0; ui_max = 1.0; ui_step = 0.01;
+> = 1.0;
 
 uniform int Nostalgia_palette <
 	ui_type = "combo";
 	ui_label = "Palette";
-	ui_tooltip = "Choose a palette";
-	//ui_category = "";
+	ui_tooltip = "Used when 'Color reduction type' is Palette.";
 	ui_items = 
 	"Custom\0"
-	"C64 palette\0"
-	"EGA palette\0"
-	"IBMPC palette\0"
-	"ZXSpectrum palette\0"
-	"AppleII palette\0"
-	"NTSC palette\0"
-	"Commodore VIC-20\0"
-	"MSX Systems\0"
-	"Thomson MO5\0"
-	"Amstrad CPC\0"
-	"Atari ST\0"
-	"Mattel Aquarius\0"
-	"Gameboy\0"
-	"Aek16 palette";
+	"C64 (16 colors)\0"
+	"EGA (16 colors)\0"
+	"CGA (4 colors, cyan/magenta)\0"
+	"ZX Spectrum (15 colors)\0"
+	"Game Boy (4 greens)\0";
 > = 0;
+
+uniform int Nostalgia_levels
+<
+	ui_type = "slider";
+	ui_label = "Quantize levels";
+	ui_tooltip = "Number of brightness levels per color channel (used when 'Color reduction type' is Quantize).\n2 = 8 colors, 4 = 64 colors, 8 = 512 colors.";
+	ui_min = 2; ui_max = 16; ui_step = 1;
+> = 4;
+
+uniform bool Nostalgia_dither 
+<
+	ui_label = "Dither";
+	ui_tooltip = "Checkerboard dither. Works with any color reduction type, and also on its own.";
+> = 0;
+
+uniform float Nostalgia_dither_strength
+<
+	ui_type = "slider";
+	ui_label = "Dither strength";
+	ui_min = 0.0; ui_max = 0.3; ui_step = 0.005;
+> = 0.08;
 
 uniform float3 Nostalgia_color_0 < __UNIFORM_COLOR_FLOAT3
 	ui_label = "Color 0";
@@ -195,14 +237,6 @@ uniform float3 Nostalgia_color_15 < __UNIFORM_COLOR_FLOAT3
 	ui_category = "Custom palette";
 > = float3(187. , 187. , 187. ) / 255.;  //Grey 3
 
-/*
-uniform bool Nostalgia_linear //Can't currently make a UI setting for this since I need the preprocessor for that and it does not accept uniforms from the UI
-<
-	ui_label = "Linear";
-	//ui_category = "Color options";
-> = 0;
-*/
-
 /*--------------.
 | :: Sampler :: |
 '--------------*/
@@ -213,6 +247,195 @@ sampler Linear
 	SRGBTexture = true;
 };
 
+// 16x1 texture holding the selected palette already converted to the working
+// (linear) space. It is filled by a tiny pass once per frame, so the main pass
+// doesn't need to rebuild the palette or run pow() on it for every pixel.
+texture NostalgiaPaletteTex
+{
+	Width = 16;
+	Height = 1;
+	Format = RGBA16F;
+};
+
+sampler NostalgiaPaletteSampler
+{
+	Texture = NostalgiaPaletteTex;
+	MagFilter = POINT;
+	MinFilter = POINT;
+	MipFilter = POINT;
+	AddressU = CLAMP;
+	AddressV = CLAMP;
+};
+
+/*---------------.
+| :: Functions :: |
+'---------------*/
+
+// Exact sRGB curves (same ones the GPU uses for SRGBTexture / SRGBWriteEnable)
+float3 SRGBToLinear(float3 c)
+{
+	c = saturate(c);
+	return lerp(c / 12.92, pow((c + 0.055) / 1.055, 2.4), step(0.04045, c));
+}
+
+float3 LinearToSRGB(float3 c)
+{
+	c = saturate(c);
+	return lerp(c * 12.92, 1.055 * pow(c, 1.0 / 2.4) - 0.055, step(0.0031308, c));
+}
+
+// Working space -> "what you see on screen" values (0-1, gamma encoded)
+float3 ToDisplay(float3 c)
+{
+	#if Nostalgia_linear == 1
+		return LinearToSRGB(c);
+	#else
+		return c;
+	#endif
+}
+
+// "What you see on screen" values -> working space
+float3 FromDisplay(float3 c)
+{
+	#if Nostalgia_linear == 1
+		return SRGBToLinear(c);
+	#else
+		return c;
+	#endif
+}
+
+/*----------------------.
+| :: Palette helpers :: |
+'----------------------*/
+
+// Number of colors in the selected palette
+int PaletteCount()
+{
+	if (Nostalgia_palette == 3) return 4;  // CGA
+	if (Nostalgia_palette == 4) return 15; // ZX Spectrum
+	if (Nostalgia_palette == 5) return 4;  // Game Boy
+	return 16;
+}
+
+// Reads color i of the palette (already in the working space)
+float3 GetPalette(int i)
+{
+	return tex2Dlod(NostalgiaPaletteSampler, float4((float(i) + 0.5) / 16.0, 0.5, 0.0, 0.0)).rgb;
+}
+
+// Returns palette color i as you want to SEE it on screen (gamma-encoded values)
+float3 GetPaletteDisplayColor(int i)
+{
+	float3 palette[16] = //Custom palette
+	{
+		Nostalgia_color_0,
+		Nostalgia_color_1,
+		Nostalgia_color_2,
+		Nostalgia_color_3,
+		Nostalgia_color_4,
+		Nostalgia_color_5,
+		Nostalgia_color_6,
+		Nostalgia_color_7,
+		Nostalgia_color_8,
+		Nostalgia_color_9,
+		Nostalgia_color_10,
+		Nostalgia_color_11,
+		Nostalgia_color_12,
+		Nostalgia_color_13,
+		Nostalgia_color_14,
+		Nostalgia_color_15
+	};
+
+
+
+	// All palette values below are the colors as you want to SEE them on screen.
+	// They are converted to the working space when matching/outputting.
+
+	if (Nostalgia_palette == 1) //C64 palette from http://www.c64-wiki.com/index.php/Color
+	{
+		palette[0]  = float3(  0. ,   0. ,   0. ) / 255.; //Black
+		palette[1]  = float3(255. , 255. , 255. ) / 255.; //White
+		palette[2]  = float3(136. ,   0. ,   0. ) / 255.; //Red
+		palette[3]  = float3(170. , 255. , 238. ) / 255.; //Cyan
+		palette[4]  = float3(204. ,  68. , 204. ) / 255.; //Violet
+		palette[5]  = float3(  0. , 204. ,  85. ) / 255.; //Green
+		palette[6]  = float3(  0. ,   0. , 170. ) / 255.; //Blue
+		palette[7]  = float3(238. , 238. , 119. ) / 255.; //Yellow 1
+		palette[8]  = float3(221. , 136. ,  85. ) / 255.; //Orange
+		palette[9]  = float3(102. ,  68. ,   0. ) / 255.; //Brown
+		palette[10] = float3(255. , 119. , 119. ) / 255.; //Yellow 2
+		palette[11] = float3( 51. ,  51. ,  51. ) / 255.; //Grey 1
+		palette[12] = float3(119. , 119. , 119. ) / 255.; //Grey 2
+		palette[13] = float3(170. , 255. , 102. ) / 255.; //Lightgreen
+		palette[14] = float3(  0. , 136. , 255. ) / 255.; //Lightblue
+		palette[15] = float3(187. , 187. , 187. ) / 255.; //Grey 3
+	}
+
+	if (Nostalgia_palette == 2) //EGA palette
+	{
+		palette[0] 	= float3(0.0,		0.0,		0.0		); //Black
+		palette[1] 	= float3(0.0,		0.0,		0.666667); //Blue
+		palette[2] 	= float3(0.0,		0.666667,	0.0		); //Green
+		palette[3] 	= float3(0.0,		0.666667,	0.666667); //Cyan
+		palette[4] 	= float3(0.666667,	0.0,		0.0		); //Red
+		palette[5] 	= float3(0.666667,	0.0,		0.666667); //Magenta
+		palette[6] 	= float3(0.666667,	0.333333,	0.0		); //Brown 
+		palette[7] 	= float3(0.666667,	0.666667,	0.666667); //Light gray
+		palette[8] 	= float3(0.333333,	0.333333,	0.333333); //Dark gray
+		palette[9] 	= float3(0.333333,	0.333333,	1.0		); //Bright blue
+		palette[10]	= float3(0.333333,	1.0,		0.333333); //Bright green
+		palette[11]	= float3(0.333333,	1.0,		1.0		); //Bright cyan
+		palette[12]	= float3(1.0,		0.333333,	0.333333); //Bright red
+		palette[13]	= float3(1.0,		0.333333,	1.0		); //Bright magenta
+		palette[14]	= float3(1.0,		1.0,		0.333333); //Bright yellow
+		palette[15]	= float3(1.0,		1.0,		1.0		); //White
+	}
+
+	if (Nostalgia_palette == 3) //CGA 4-color mode, palette 1 high intensity
+	{
+		palette[0] = float3(0.0,		0.0,		0.0		); //Black
+		palette[1] = float3(0.333333,	1.0,		1.0		); //Cyan
+		palette[2] = float3(1.0,		0.333333,	1.0		); //Magenta
+		palette[3] = float3(1.0,		1.0,		1.0		); //White
+	}
+
+	if (Nostalgia_palette == 4) //ZX Spectrum palette (15 unique colors, black exists only once)
+	{
+		// Normal intensity (0xD7)
+		palette[0]  = float3(0.0,		0.0,		0.0		); //Black
+		palette[1]  = float3(0.0,		0.0,		0.843137); //Blue
+		palette[2]  = float3(0.0,		0.843137,	0.0		); //Green
+		palette[3]  = float3(0.0,		0.843137,	0.843137); //Cyan
+		palette[4]  = float3(0.843137,	0.0,		0.0		); //Red
+		palette[5]  = float3(0.843137,	0.0,		0.843137); //Magenta
+		palette[6]  = float3(0.843137,	0.843137,	0.0		); //Yellow
+		palette[7]  = float3(0.843137,	0.843137,	0.843137); //White
+		// Bright (0xFF)
+		palette[8]  = float3(0.0,		0.0,		1.0		); //Bright blue
+		palette[9]  = float3(0.0,		1.0,		0.0		); //Bright green
+		palette[10] = float3(0.0,		1.0,		1.0		); //Bright cyan
+		palette[11] = float3(1.0,		0.0,		0.0		); //Bright red
+		palette[12] = float3(1.0,		0.0,		1.0		); //Bright magenta
+		palette[13] = float3(1.0,		1.0,		0.0		); //Bright yellow
+		palette[14] = float3(1.0,		1.0,		1.0		); //Bright white
+	}
+
+	if (Nostalgia_palette == 5) //Game Boy (DMG), from darkest to lightest
+	{
+		palette[0] = float3( 15. ,  56. ,  15. ) / 255.; //#0F380F
+		palette[1] = float3( 48. ,  98. ,  48. ) / 255.; //#306230
+		palette[2] = float3(139. , 172. ,  15. ) / 255.; //#8BAC0F
+		palette[3] = float3(155. , 188. ,  15. ) / 255.; //#9BBC0F
+	}
+
+	return palette[clamp(i, 0, 15)];
+}
+
+// Runs on a 16x1 render target: one pixel per palette color
+float4 PS_Palette(float4 vpos : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
+{
+	return float4(FromDisplay(GetPaletteDisplayColor(int(vpos.x))), 1.0);
+}
 
 /*-------------.
 | :: Effect :: |
@@ -220,365 +443,135 @@ sampler Linear
 
 float3 PS_Nostalgia(float4 vpos : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
 {
-	float3 color;
-	int colorCount = 16;
-
 	#if Nostalgia_linear == 1
-		color = tex2D(Linear, texcoord.xy).rgb;
+		float3 color = tex2D(Linear, texcoord.xy).rgb;
 	#else
-		color = tex2D(ReShade::BackBuffer, texcoord.xy).rgb;
+		float3 color = tex2D(ReShade::BackBuffer, texcoord.xy).rgb;
 	#endif
-	
 
-	if (Nostalgia_color_reduction)
+	uint2 pixel = uint2(vpos.xy);
+
+	// :: Dither :: //
+	// Checkerboard shift, applied in gamma space so the strength looks even in
+	// dark and bright areas. Independent of the color reduction setting.
+
+	[branch] if (Nostalgia_dither)
 	{
-		float3 palette[16] = //Custom palette
-		{
-			Nostalgia_color_0,
-			Nostalgia_color_1,
-			Nostalgia_color_2,
-			Nostalgia_color_3,
-			Nostalgia_color_4,
-			Nostalgia_color_5,
-			Nostalgia_color_6,
-			Nostalgia_color_7,
-			Nostalgia_color_8,
-			Nostalgia_color_9,
-			Nostalgia_color_10,
-			Nostalgia_color_11,
-			Nostalgia_color_12,
-			Nostalgia_color_13,
-			Nostalgia_color_14,
-			Nostalgia_color_15
-		};
+		float checker = float((pixel.x + pixel.y) % 2u) * 2.0 - 1.0; // -1 or +1
+		color = FromDisplay(saturate(ToDisplay(color) + checker * Nostalgia_dither_strength));
+	}
 
-		if (Nostalgia_palette == 1) //C64 palette from http://www.c64-wiki.com/index.php/Color
-		{
-			palette[0]  = float3(  0. ,   0. ,   0. ) / 255.; //Black
-			palette[1]  = float3(255. , 255. , 255. ) / 255.; //White
-			palette[2]  = float3(136. ,   0. ,   0. ) / 255.; //Red
-			palette[3]  = float3(170. , 255. , 238. ) / 255.; //Cyan
-			palette[4]  = float3(204. ,  68. , 204. ) / 255.; //Violet
-			palette[5]  = float3(  0. , 204. ,  85. ) / 255.; //Green
-			palette[6]  = float3(  0. ,   0. , 170. ) / 255.; //Blue
-			palette[7]  = float3(238. , 238. , 119. ) / 255.; //Yellow 1
-			palette[8]  = float3(221. , 136. ,  85. ) / 255.; //Orange
-			palette[9]  = float3(102. ,  68. ,   0. ) / 255.; //Brown
-			palette[10] = float3(255. , 119. , 119. ) / 255.; //Yellow 2
-			palette[11] = float3( 51. ,  51. ,  51. ) / 255.; //Grey 1
-			palette[12] = float3(119. , 119. , 119. ) / 255.; //Grey 2
-			palette[13] = float3(170. , 255. , 102. ) / 255.; //Lightgreen
-			palette[14] = float3(  0. , 136. , 255. ) / 255.; //Lightblue
-			palette[15] = float3(187. , 187. , 187. ) / 255.; //Grey 3
-		}
+	// :: Color reduction :: //
 
-		if (Nostalgia_palette == 2) //EGA palette
-		{
-			palette[0] 	= float3(0.0,		0.0,		0.0		); //Black
-			palette[1] 	= float3(0.0,		0.0,		0.666667); //Blue
-			palette[2] 	= float3(0.0,		0.666667,	0.0		); //Green
-			palette[3] 	= float3(0.0,		0.666667,	0.666667); //Cyan
-			palette[4] 	= float3(0.666667,	0.0,		0.0		); //Red
-			palette[5] 	= float3(0.666667,	0.0,		0.666667); //Magenta
-			palette[6] 	= float3(0.666667,	0.333333,	0.0		); //Brown 
-			palette[7] 	= float3(0.666667,	0.666667,	0.666667); //Light gray
-			palette[8] 	= float3(0.333333,	0.333333,	0.333333); //Dark gray
-			palette[9] 	= float3(0.333333,	0.333333,	1.0		); //Bright blue
-			palette[10]	= float3(0.333333,	1.0,		0.333333); //Bright green
-			palette[11]	= float3(0.333333,	1.0,		1.0		); //Bright cyan
-			palette[12]	= float3(1.0,		0.333333,	0.333333); //Bright red
-			palette[13]	= float3(1.0,		0.333333,	1.0		); //Bright magenta
-			palette[14]	= float3(1.0,		1.0,		0.333333); //Bright yellow
-			palette[15]	= float3(1.0,		1.0,		1.0		); //White
-		}
-	
-		if (Nostalgia_palette == 3) //IBMPC palette
-		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(0,0,0.8);
-			palette[2] = float3(0,0.6,0);
-			palette[3] = float3(0,0.6,0.8);
-			palette[4] = float3(0.8,0,0);
-			palette[5] = float3(0.8,0,0.8);
-			palette[6] = float3(0.8,0.6,0);
-			palette[7] = float3(0.8,0.8,0.8);
-			palette[8] = float3(0.4,0.4,0.4);
-			palette[9] = float3(0.4,0.4,1);
-			palette[10] = float3(0.4,1,0.4);
-			palette[11] = float3(0.4,1,1);
-			palette[12] = float3(0.99,0.4,0.4);
-			palette[13] = float3(1,0.4,1);
-			palette[14] = float3(1,1,0.4);
-			palette[15] = float3(1,1,1);
-		}
+	[branch] if (Nostalgia_color_reduction == 1) // Palette
+	{
+		float3 reduced;
 
-		if (Nostalgia_palette == 4) //ZX Spectrum palette
+		[branch] if (Nostalgia_palette == 5)
 		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(0,0,0.811764705882353);
-			palette[2] = float3(0,0.811764705882353,0);
-			palette[3] = float3(0,0.811764705882353,0.811764705882353);
-			palette[4] = float3(0.811764705882353,0,0);
-			palette[5] = float3(0.811764705882353,0,0.752941176470588);
-			palette[6] = float3(0.811764705882353,0.811764705882353,0);
-			palette[7] = float3(0.811764705882353,0.811764705882353,0.811764705882353);
-			palette[8] = float3(0,0,0);
-			palette[9] = float3(0,0,1);
-			palette[10] = float3(0,1,0);
-			palette[11] = float3(0,1,1);
-			palette[12] = float3(1,0,0);
-			palette[13] = float3(1,0,1);
-			palette[14] = float3(1,1,0);
-			palette[15] = float3(1,1,1);
+			// All four colors are greens, so RGB distance would pick colors by hue.
+			// Match by brightness instead - this is what gives the real Game Boy look.
+			float grey = dot(ToDisplay(color), float3(0.299, 0.587, 0.114));
+			int idx = min(int(saturate(grey) * 4.0), 3);
+			reduced = GetPalette(idx);
 		}
+		else
+		{
+			// :: Color matching (in the working space) :: //
 
-		if (Nostalgia_palette == 5) //AppleII palette
-		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(0.890196078431373,0.117647058823529,0.376470588235294);
-			palette[2] = float3(0.376470588235294,0.305882352941176,0.741176470588235);
-			palette[3] = float3(1,0.266666666666667,0.992156862745098);
-			palette[4] = float3(0,0.63921568627451,0.376470588235294);
-			palette[5] = float3(0.611764705882353,0.611764705882353,0.611764705882353);
-			palette[6] = float3(0.0784313725490196,0.811764705882353,0.992156862745098);
-			palette[7] = float3(0.815686274509804,0.764705882352941,1);
-			palette[8] = float3(0.376470588235294,0.447058823529412,0.0117647058823529);
-			palette[9] = float3(1,0.415686274509804,0.235294117647059);
-			palette[10] = float3(0.611764705882353,0.611764705882353,0.611764705882353);
-			palette[11] = float3(1,0.627450980392157,0.815686274509804);
-			palette[12] = float3(0.0784313725490196,0.96078431372549,0.235294117647059);
-			palette[13] = float3(0.815686274509804,0.866666666666667,0.552941176470588);
-			palette[14] = float3(0.447058823529412,1,0.815686274509804);
-			palette[15] = float3(1,1,1);
-		}
-		
-		if (Nostalgia_palette == 6) //NTSC palette
-		{
-			palette[0] = float3(0.831372549019608,0.831372549019608,0.831372549019608);
-			palette[1] = float3(0.866666666666667,0.776470588235294,0.474509803921569);
-			palette[2] = float3(0.0392156862745098,0.96078431372549,0.776470588235294);
-			palette[3] = float3(0.0470588235294118,0.917647058823529,0.380392156862745);
-			palette[4] = float3(1,0.156862745098039,0.709803921568627);
-			palette[5] = float3(1,0.109803921568627,0.298039215686275);
-			palette[6] = float3(0.149019607843137,0.254901960784314,0.607843137254902);
-			palette[7] = float3(0,0.87843137254902,0.905882352941176);
-			palette[8] = float3(1,1,1);
-			palette[9] = float3(1,0.317647058823529,1);
-			palette[10] = float3(0.16078431372549,0.16078431372549,0.16078431372549);
-			palette[11] = float3(0.16078431372549,0.16078431372549,0.16078431372549);
-			palette[12] = float3(0.16078431372549,0.16078431372549,0.16078431372549);
-			palette[13] = float3(0.831372549019608,0.831372549019608,0.831372549019608);
-			palette[14] = float3(0.866666666666667,0.776470588235294,0.474509803921569);
-			palette[15] = float3(0.0392156862745098,0.96078431372549,0.776470588235294);
-		}
-		
-		if (Nostalgia_palette == 7) // Commodore VIC-20
-		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(1,1,1);
-			palette[2] = float3(0.470588235294118,0.16078431372549,0.133333333333333);
-			palette[3] = float3(0.529411764705882,0.83921568627451,0.866666666666667);
-			palette[4] = float3(0.666666666666667,0.372549019607843,0.713725490196078);
-			palette[5] = float3(0.101960784313725,0.509803921568627,0.149019607843137);
-			palette[6] = float3(0.250980392156863,0.192156862745098,0.552941176470588);
-			palette[7] = float3(0.749019607843137,0.807843137254902,0.447058823529412);
-			palette[8] = float3(0.666666666666667,0.454901960784314,0.286274509803922);
-			palette[9] = float3(0.917647058823529,0.705882352941177,0.537254901960784);
-			palette[10] = float3(0.72156862745098,0.411764705882353,0.384313725490196);
-			palette[11] = float3(0.780392156862745,1,1);
-			palette[12] = float3(0.917647058823529,0.623529411764706,0.964705882352941);
-			palette[13] = float3(0.580392156862745,0.87843137254902,0.537254901960784);
-			palette[14] = float3(0.501960784313725,0.443137254901961,0.8);
-			palette[15] = float3(1,1,0.698039215686274);
-		}
-		
-		if (Nostalgia_palette == 8) // MSX Systems
-		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(1,1,1);
-			palette[2] = float3(0.243137254901961,0.72156862745098,0.286274509803922);
-			palette[3] = float3(0.454901960784314,0.815686274509804,0.490196078431373);
-			palette[4] = float3(0.349019607843137,0.333333333333333,0.87843137254902);
-			palette[5] = float3(0.501960784313725,0.462745098039216,0.945098039215686);
-			palette[6] = float3(0.725490196078431,0.368627450980392,0.317647058823529);
-			palette[7] = float3(0.396078431372549,0.858823529411765,0.937254901960784);
-			palette[8] = float3(0.858823529411765,0.396078431372549,0.349019607843137);
-			palette[9] = float3(1,0.537254901960784,0.490196078431373);
-			palette[10] = float3(0.8,0.764705882352941,0.368627450980392);
-			palette[11] = float3(0.870588235294118,0.815686274509804,0.529411764705882);
-			palette[12] = float3(0.227450980392157,0.635294117647059,0.254901960784314);
-			palette[13] = float3(0.717647058823529,0.4,0.709803921568627);
-			palette[14] = float3(0.8,0.8,0.8);
-			palette[15] = float3(1,1,0.698039215686274);
-		}
-		
-		if (Nostalgia_palette == 9) // Thomson MO5
-		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(1,1,1);
-			palette[2] = float3(1,0,0);
-			palette[3] = float3(0,1,0);
-			palette[4] = float3(1,1,0);
-			palette[5] = float3(0,0,1);
-			palette[6] = float3(1,0,1);
-			palette[7] = float3(0,1,1);
-			palette[8] = float3(0,0,0);
-			palette[9] = float3(0.733333333333333,0.733333333333333,0.733333333333333);
-			palette[10] = float3(0.866666666666667,0.466666666666667,0.466666666666667);
-			palette[11] = float3(0.466666666666667,0.866666666666667,0.466666666666667);
-			palette[12] = float3(0.866666666666667,0.866666666666667,0.466666666666667);
-			palette[13] = float3(0.466666666666667,0.466666666666667,0.866666666666667);
-			palette[14] = float3(0.866666666666667,0.466666666666667,0.933333333333333);
-			palette[15] = float3(0.733333333333333,1,1);
-		}
-		
-		if (Nostalgia_palette == 10) // Amstrad CPC
-		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(1,1,1);
-			palette[2] = float3(0,0,0.498039215686275);
-			palette[3] = float3(0.498039215686275,0,0);
-			palette[4] = float3(0.498039215686275,0,0.498039215686275);
-			palette[5] = float3(0,0.498039215686275,0);
-			palette[6] = float3(1,0,0);
-			palette[7] = float3(0,0.498039215686275,0.498039215686275);
-			palette[8] = float3(0.498039215686275,0.498039215686275,0);
-			palette[9] = float3(0.498039215686275,0.498039215686275,0.498039215686275);
-			palette[10] = float3(0.498039215686275,0.498039215686275,1);
-			palette[11] = float3(1,0.498039215686275,0);
-			palette[12] = float3(1,0.498039215686275,0.498039215686275);
-			palette[13] = float3(0.498039215686275,1,0.498039215686275);
-			palette[14] = float3(0.498039215686275,1,1);
-			palette[15] = float3(1,1,0.498039215686275);
-		}
-		
-		if (Nostalgia_palette == 11) // Atari ST
-		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(1,0.886274509803922,0.882352941176471);
-			palette[2] = float3(0.376470588235294,0.0392156862745098,0.0117647058823529);
-			palette[3] = float3(0.811764705882353,0.133333333333333,0.0549019607843137);
-			palette[4] = float3(0.16078431372549,0.345098039215686,0.0352941176470588);
-			palette[5] = float3(0.937254901960784,0.16078431372549,0.0705882352941176);
-			palette[6] = float3(0.356862745098039,0.349019607843137,0.0431372549019608);
-			palette[7] = float3(0.352941176470588,0.352941176470588,0.352941176470588);
-			palette[8] = float3(0.803921568627451,0.372549019607843,0.207843137254902);
-			palette[9] = float3(0.494117647058824,0.509803921568627,0.756862745098039);
-			palette[10] = float3(0.305882352941176,0.623529411764706,0.0980392156862745);
-			palette[11] = float3(0.792156862745098,0.509803921568627,0.364705882352941);
-			palette[12] = float3(1,0.392156862745098,0.215686274509804);
-			palette[13] = float3(1,0.525490196078431,0.368627450980392);
-			palette[14] = float3(0.631372549019608,0.63921568627451,0.76078431372549);
-			palette[15] = float3(1,0.768627450980392,0.517647058823529);
-		}
-		
-		if (Nostalgia_palette == 12) // Mattel Aquarius
-		{
-			palette[0] = float3(0,0,0);
-			palette[1] = float3(1,1,1);
-			palette[2] = float3(0.494117647058824,0.0980392156862745,0.164705882352941);
-			palette[3] = float3(0.764705882352941,0,0.105882352941176);
-			palette[4] = float3(0.725490196078431,0.694117647058824,0.337254901960784);
-			palette[5] = float3(0.784313725490196,0.725490196078431,0.0274509803921569);
-			palette[6] = float3(0.231372549019608,0.592156862745098,0.180392156862745);
-			palette[7] = float3(0.0274509803921569,0.749019607843137,0);
-			palette[8] = float3(0.250980392156863,0.650980392156863,0.584313725490196);
-			palette[9] = float3(0,0.776470588235294,0.643137254901961);
-			palette[10] = float3(0.749019607843137,0.749019607843137,0.749019607843137);
-			palette[11] = float3(0.513725490196078,0.152941176470588,0.564705882352941);
-			palette[12] = float3(0.717647058823529,0,0.819607843137255);
-			palette[13] = float3(0.0196078431372549,0.0509803921568627,0.407843137254902);
-			colorCount = 14;
-		}
-		
-		if (Nostalgia_palette == 13) // Gameboy
-		{
-			palette[0] = float3(0.0588235294117647,0.219607843137255,0.0588235294117647);
-			palette[1] = float3(0.607843137254902,0.737254901960784,0.0588235294117647);
-			palette[2] = float3(0.188235294117647,0.384313725490196,0.188235294117647);
-			palette[3] = float3(0.545098039215686,0.674509803921569,0.0588235294117647);
-			colorCount = 4;
-		}
+			int colorCount = PaletteCount();
+			float3 closest_color = GetPalette(0);
+			float3 diff = color - closest_color;
+			float closest_dist = dot(diff, diff); //squared distance - no need for the square root
 
+			[loop] for (int i = 1; i < colorCount; i++)
+			{
+				float3 pal = GetPalette(i);
+				diff = color - pal;
+				float dist = dot(diff, diff);
 
-		if (Nostalgia_palette == 14) //aek16 ( http://eastfarthing.com/blog/2016-05-06-palette/ )
-		{
-			palette[0] 	= float3(0.247059,	0.196078,	0.682353); //
-			palette[1] 	= float3(0.890196,	0.054902,	0.760784); //
-			palette[2] 	= float3(0.729412,	0.666667,	1.000000); //
-			palette[3] 	= float3(1.,		  1.000000,	1.      ); //White
-			palette[4] 	= float3(1.000000,	0.580392,	0.615686); //
-			palette[5] 	= float3(0.909804,	0.007843,	0.000000); //
-			palette[6] 	= float3(0.478431,	0.141176,	0.239216); //
-			palette[7] 	= float3(0.,		  0.	  ,	0.		); //Black
-			palette[8] 	= float3(0.098039,	0.337255,	0.282353); //
-			palette[9] 	= float3(0.415686,	0.537255,	0.152941); //
-			palette[10] 	= float3(0.086275,	0.929412,	0.458824); //
-			palette[11] 	= float3(0.196078,	0.756863,	0.764706); //
-			palette[12] 	= float3(0.019608,	0.498039,	0.756863); //
-			palette[13] 	= float3(0.431373,	0.305882,	0.137255); //
-			palette[14] 	= float3(0.937255,	0.890196,	0.019608); //
-			palette[15] 	= float3(0.788235,	0.560784,	0.298039); //
-		}
-
-		// :: Dither :: //
-
-		if (Nostalgia_dither == 1) //aek16 ( http://eastfarthing.com/blog/2016-05-06-palette/ )
-		{
-		
-			//Calculate grid position
-			float grid_position = frac(dot(texcoord, BUFFER_SCREEN_SIZE * 0.5) + 0.25); //returns 0.25 and 0.75
-	
-			//Calculate how big the shift should be
-			float dither_shift = (0.25) * (1.0 / (pow(2,2.0) - 1.0)); // 0.25 seems good both when using math and when eyeballing it. So does 0.75 btw.
-	
-			//Shift the individual colors differently, thus making it even harder to see the dithering pattern
-			float3 dither_shift_RGB = float3(dither_shift, dither_shift, dither_shift); //dithering
-	
-			//modify shift acording to grid position.
-			dither_shift_RGB = lerp(2.0 * dither_shift_RGB, -2.0 * dither_shift_RGB, grid_position); //shift acording to grid position.
-	
-			//shift the color by dither_shift
-			//color.rgb += lerp(2.0 * dither_shift_RGB, -2.0 * dither_shift_RGB, grid_position); //shift acording to grid position.
-			color.rgb += dither_shift_RGB;
-		}
-		
-		// :: Color matching :: //
-		
-		float3 diff = color - palette[0]; //find the difference in color compared to color 0
-		
-		float dist = dot(diff,diff); //squared distance of difference - we don't need to calculate the square root of this
-
-		float closest_dist = dist; //this has to be the closest distance so far as it's the first we have checked
-		float3 closest_color = palette[0]; //and closest color so far is this one
-
-		for (int i = 1 ; i < colorCount ; i++) //for colors 1 to colorCount
-		{
-			diff = color - palette[i]; //find the difference in color
-		
-			dist = dot(diff,diff); //squared distance of difference - we don't need to calculate the square root of this
-		
-			if (dist < closest_dist) //is the distance closer than the previously closest distance?
-			{ 
-				closest_dist = dist; //closest distance is now this distance
-				closest_color = palette[i]; //closest color is now this color
+				if (dist < closest_dist)
+				{
+					closest_dist = dist;
+					closest_color = pal;
+				}
 			}
+
+			reduced = closest_color;
 		}
-		
-		color = closest_color; //return the pixel
+
+		color = lerp(color, reduced, Nostalgia_reduction_strength);
 	}
 
-	if (Nostalgia_scanlines == 1)
+	[branch] if (Nostalgia_color_reduction == 2) // Quantize
 	{
-		color *= frac(texcoord.y * (BUFFER_HEIGHT * 0.5)) + 0.5; //Scanlines
-	}
-	if (Nostalgia_scanlines == 2)
-	{
-		float grey  = dot(color,float(1.0/3.0));
-		color = (frac(texcoord.y * (BUFFER_HEIGHT * 0.5)) < 0.25) ? color : color * ((-grey*grey+grey+grey) * 0.5 + 0.5);
+		float steps = float(max(Nostalgia_levels, 2)) - 1.0;
+		float3 d = ToDisplay(color);
+		d = floor(d * steps + 0.5) / steps;
+		color = lerp(color, FromDisplay(d), Nostalgia_reduction_strength);
 	}
 
-	return color; //return the pixel
+	// :: Scanlines :: //
+
+	[branch] if (Nostalgia_scanlines > 0)
+	{
+		uint size = uint(max(Nostalgia_scanline_size, 2));
+		uint row = pixel.y;
+		uint col = pixel.x;
+		float phase = float(row % size) / float(size); // 0.0 .. <1.0 inside one line period
+		float strength = Nostalgia_scanline_strength;
+
+		[branch] if (Nostalgia_scanlines <= 4)
+		{
+			float mask = 0.0; // 0 = untouched, 1 = fully dark
+
+			[branch] if (Nostalgia_scanlines == 1) // Soft (sine wave)
+			{
+				mask = 0.5 - 0.5 * cos(phase * 6.2831853);
+			}
+			else if (Nostalgia_scanlines == 2) // CRT: bright pixels bleed over the dark lines
+			{
+				float grey = dot(ToDisplay(color), float3(0.299, 0.587, 0.114));
+				mask = (0.5 - 0.5 * cos(phase * 6.2831853)) * (1.0 - 0.75 * grey);
+			}
+			else if (Nostalgia_scanlines == 3) // Thin lines (1 px)
+			{
+				mask = ((row % size) == (size - 1u)) ? 1.0 : 0.0;
+			}
+			else // Hard bands (50% dark)
+			{
+				mask = (phase >= 0.5) ? 1.0 : 0.0;
+			}
+
+			color *= 1.0 - strength * mask;
+		}
+		else
+		{
+			// RGB stripe / dot masks. Dim the two other channels and compensate the
+			// average brightness so the picture does not get much darker.
+			float dim = 0.4;
+			float comp = (1.0 + 2.0 * dim) / 3.0;
+			uint idx;
+			float gap = 1.0;
+
+			[branch] if (Nostalgia_scanlines == 5) // Aperture grille (vertical RGB stripes)
+			{
+				idx = col % 3u;
+			}
+			else // Shadow mask (RGB dots, every other row shifted, dark gap between rows)
+			{
+				idx = (col + 2u * ((row / size) % 2u)) % 3u;
+				gap = ((row % size) == (size - 1u)) ? 0.5 : 1.0;
+			}
+
+			float3 ch = float3(idx == 0u ? 1.0 : 0.0, idx == 1u ? 1.0 : 0.0, idx == 2u ? 1.0 : 0.0);
+			float3 stripe = (dim + (1.0 - dim) * ch) / comp * gap;
+
+			color *= lerp(float3(1.0, 1.0, 1.0), stripe, strength);
+		}
+	}
+
+	return saturate(color); //return the pixel
 }
 
 
@@ -588,6 +581,15 @@ float3 PS_Nostalgia(float4 vpos : SV_Position, float2 texcoord : TEXCOORD) : SV_
 
 technique Nostalgia
 {
+	// Pass 1: builds the (linear) palette texture - only 16 pixels
+	pass PalettePass
+	{
+		VertexShader = PostProcessVS;
+		PixelShader = PS_Palette;
+		RenderTarget = NostalgiaPaletteTex;
+	}
+
+	// Pass 2: the actual effect
 	pass NostalgiaPass
 	{
 		VertexShader = PostProcessVS;
